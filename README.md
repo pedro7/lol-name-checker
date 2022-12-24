@@ -13,7 +13,7 @@ server = ''
 
 checker = Checker(key, server)
 
-print(checker.check_name('desired_name'))
+print(checker.check_name('desired name'))
 ~~~~
 
 The code below prints when the summoner name "Red" will be available in the north american server.
