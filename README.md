@@ -11,10 +11,9 @@ key = ''
 # choose your desired server (br, eune, euw, lan, las, na, oce, ru, tr, jp, kr)
 server = ''
 
-your_server = Checker(key, server)
+checker = Checker(key, server)
 
-while True:
-        print(your_server.check_name(input('Enter the name: ')))
+print(checker.check_name('desired_name'))
 ~~~~
 
 The code below prints when the summoner name "Red" will be available in the north american server.
