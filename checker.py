@@ -41,10 +41,10 @@ class Checker:
             raise
         return summoner_dto.json()
 
-    def _get_name_cleanup_datetime(self, name_timestamp, level):
+    def _get_name_cleanup_datetime(self, timestamp, level):
         if level >= 30:
-            return datetime.fromtimestamp(name_timestamp / 1000) + relativedelta(months=+30)
+            return datetime.fromtimestamp(timestamp / 1000) + relativedelta(months=+30)
         elif level <= 6:
-            return datetime.fromtimestamp(name_timestamp / 1000) + relativedelta(months=+6)
+            return datetime.fromtimestamp(timestamp / 1000) + relativedelta(months=+6)
         else:
-            return datetime.fromtimestamp(name_timestamp / 1000) + relativedelta(months=+level)
+            return datetime.fromtimestamp(timestamp / 1000) + relativedelta(months=+level)
