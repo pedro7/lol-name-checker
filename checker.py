@@ -15,12 +15,11 @@ class Checker:
         try:
             name_availability_datetime = self.get_name_availability_datetime(name)
         except HTTPError as err:
-            status_code = err.response.status_code
-            if (status_code == 404):
+            if (err.response.status_code == 404):
                 return 'The name is available for new/existent accounts!'
-            elif (status_code == 403):
+            elif (err.response.status_code == 403):
                 return 'Invalid or expired key'
-            elif (status_code == 429):
+            elif (err.response.status_code == 429):
                 return 'Exceeded number of requests'
             else:
                 raise
