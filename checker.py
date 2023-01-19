@@ -1,49 +1,57 @@
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from requests import HTTPError, get
+from re import search
+from requests import get
 from urllib.parse import quote
 
 class Checker:
-    def __init__(self, key, server):
-        servers = {'BR': 'br1', 'EUNE': 'eun1', 'EUW': 'euw1', 'LAN': 'la1', 'LAS': 'la2', 'NA': 'na1', 'OCE': 'oc1', 'RU': 'ru', 'TR': 'tr1', 'JP': 'jp1', 'KR': 'kr'}
+    def __init__(self, server, key=None):
+        platforms = {
+            'BR'  : 'br1' ,
+            'EUNE': 'eun1',
+            'EUW' : 'euw1',
+            'LAN' : 'la1' ,
+            'LAS' : 'la2' ,
+            'NA'  : 'na1' ,
+            'OCE' : 'oc1' ,
+            'RU'  : 'ru'  ,
+            'TR'  : 'tr1' ,
+            'JP'  : 'jp1' ,
+            'KR'  : 'kr'  ,
+            'PH'  : 'ph2' ,
+            'SG'  : 'sg2' ,
+            'TW'  : 'tw2' ,
+            'TH'  : 'th2' ,
+            'VN'  : 'vn2'
+        }
+        self._platform = platforms[server.upper()]
+        self._server = server
         self._key = key
-        self._server = servers[server.upper()]
 
-    def check_name(self, name):
-        if len(name) < 3 or len(name) > 16:
-            return 'The name must have 3 to 16 characters'
-        try:
-            name_availability_datetime = self.get_name_availability_datetime(name)
-        except HTTPError as err:
-            if (err.response.status_code == 404):
-                return 'The name is available for new/existent accounts!'
-            elif (err.response.status_code == 403):
-                return 'Invalid or expired key'
-            elif (err.response.status_code == 429):
-                return 'Exceeded number of requests'
-            else:
-                raise
-        if (name_availability_datetime > datetime.now()):
-            return f'The name will be available at: {name_availability_datetime}. Exactly {name_availability_datetime - datetime.now()} from now!'
+    def get_name_availability(self, name):
+        if self._key:
+            return self._get_name_availability_with_key(name)
         else:
-            return 'The name is available for existent accounts!'
+            return self._get_name_availability_without_key(name)
 
-    def get_name_availability_datetime(self, name):
-        summoner_dto = self._get_summoner_dto(name)
-        return self._get_name_cleanup_datetime(summoner_dto['revisionDate'], summoner_dto['summonerLevel'])
-
-    def _get_summoner_dto(self, name):
-        try:
-            summoner_dto = get(f'https://{self._server}.api.riotgames.com/lol/summoner/v4/summoners/by-name/{quote(name)}?api_key={self._key}')
-            summoner_dto.raise_for_status()
-        except HTTPError:
-            raise
-        return summoner_dto.json()
-
-    def _get_name_cleanup_datetime(self, timestamp, level):
+    def _get_name_availability_with_key(self, name):
+        summoner_data = get(f'https://{self._platform}.api.riotgames.com/lol/summoner/v4/summoners/by-name/{quote(name)}?api_key={self._key}')
+        summoner_data.raise_for_status()
+        summoner_data = summoner_data.json()
+        level = summoner_data['summonerLevel']
         if level >= 30:
-            return datetime.fromtimestamp(timestamp / 1000) + relativedelta(months=+30)
+            return datetime.fromtimestamp(summoner_data['revisionDate'] / 1000) + relativedelta(months=30)
         elif level <= 6:
-            return datetime.fromtimestamp(timestamp / 1000) + relativedelta(months=+6)
+            return datetime.fromtimestamp(summoner_data['revisionDate'] / 1000) + relativedelta(months=6)
         else:
-            return datetime.fromtimestamp(timestamp / 1000) + relativedelta(months=+level)
+            return datetime.fromtimestamp(summoner_data['revisionDate'] / 1000) + relativedelta(months=level)
+
+    def _get_name_availability_without_key(self, name):
+        html = get(f'https://lolnames.gg/en/{self._server}/{format(name)}/', headers={'User-Agent': 'N'}).text
+        last_game = search('Last game: [^<]*', html)
+        if not last_game:
+            raise ValueError
+        last_game = last_game.group()[23:]
+        cleanup_date = search('Cleanup date [^:]*: [^<]*', html).group().strip()[-11:]
+        months = {'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6, 'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12}
+        return datetime(int(cleanup_date[7:11]), months[cleanup_date[3:6]], int(cleanup_date[:2]), int(last_game[:2]), int(last_game[3:5]), int(last_game[6:8]))
