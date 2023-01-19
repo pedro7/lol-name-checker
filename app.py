@@ -24,7 +24,7 @@ class CheckWorker(QObject):
             return
         months = {1 : 'Jan', 2 : 'Feb', 3 : 'Mar', 4 : 'Apr', 5 : 'May', 6 : 'Jun', 7 : 'Jul', 8 : 'Aug', 9 : 'Sep', 10 : 'Oct', 11 : 'Nov', 12 : 'Dec'}
         if (name > datetime.now()):
-            self.complete.emit(f'Available in {str((name - datetime.now())).split(".")[0]}s\n{name.day} {months[name.month]} {name.year}, {name.time()}')
+            self.complete.emit(f'Available in {str((name - datetime.now())).split(".")[0]}\n{name.day} {months[name.month]} {name.year}, {name.time()}')
         else:
             self.complete.emit('<font size="4" color="green">Available for existent accounts.</font>') 
 
