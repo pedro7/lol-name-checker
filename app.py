@@ -38,12 +38,13 @@ class NameChecker(QWidget):
     def init_ui(self):
         self.name = QLineEdit()
         self.name.setPlaceholderText('Summoner name')
+        self.name.setMaxLength(16)
 
         self.combo = QComboBox()
         self.combo.addItems(['BR', 'EUNE', 'EUW', 'LAN', 'LAS', 'NA', 'OCE', 'RU', 'TR', 'JP', 'KR', 'PH', 'SG', 'TW', 'TH', 'VN'])
 
         self.key = QLineEdit()
-        self.key.setPlaceholderText('Paste the api key (optional)')
+        self.key.setPlaceholderText('API key (optional)')
 
         self.button = QPushButton('Search')
         self.button.clicked.connect(self.check_name)
