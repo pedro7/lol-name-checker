@@ -8,31 +8,28 @@ from sys import exit
 class CheckWorker(QObject):
     complete = pyqtSignal(str)
 
-    def check_name(self, key, server, name):
-        checker = Checker(key, server)
+    def check_name(self, server, key, name):
+        checker = Checker(server, key)
         try:
-            date = checker.get_name_availability_datetime(name)
-        except HTTPError as err:
-            if (err.response.status_code == 404):
-                self.complete.emit('The name is available for new\nand existent accounts. ✅')
-                return
-            elif (err.response.status_code == 403):
-                self.complete.emit('❌ Invalid or expired key ❌')
-                return
-            elif (err.response.status_code == 429):
-                self.complete.emit('❌ Exceeded number of requests ❌')
+            name = checker.get_name_availability(name)
+        except HTTPError as http:
+            if (http.response.status_code == 404):
+                self.complete.emit('<font size="4" color="green">Available for new/existent accounts.</font>')
                 return
             else:
-                self.complete.emit('❌ Unknown error ❌')
+                self.complete.emit(f'<font size="4" color="red"><b>HTTP {http.response.status_code}</b></font>')
                 return
+        except ValueError:
+            self.complete.emit('<font size="4" color="green">Available for new/existent accounts.</font>')
+            return
         months = {1 : 'Jan', 2 : 'Feb', 3 : 'Mar', 4 : 'Apr', 5 : 'May', 6 : 'Jun', 7 : 'Jul', 8 : 'Aug', 9 : 'Sep', 10 : 'Oct', 11 : 'Nov', 12 : 'Dec'}
-        if (date > datetime.now()):
-            self.complete.emit(f'Available in {(date - datetime.now()).days + 1} day(s).\n{date.day} {months[date.month]} {date.year}, {date.time()}')
+        if (name > datetime.now()):
+            self.complete.emit(f'Available in {str((name - datetime.now())).split(".")[0]}s\n{name.day} {months[name.month]} {name.year}, {name.time()}')
         else:
-            self.complete.emit('The name is available for\nexistent accounts. ✅') 
+            self.complete.emit('<font size="4" color="green">Available for existent accounts.</font>') 
 
 class NameChecker(QWidget):
-    check_signal = pyqtSignal(str, str, str)
+    check_name_start = pyqtSignal(str, str, str)
 
     def __init__(self):
         super().__init__()
@@ -43,10 +40,10 @@ class NameChecker(QWidget):
         self.name.setPlaceholderText('Summoner name')
 
         self.combo = QComboBox()
-        self.combo.addItems(['BR', 'EUNE', 'EUW', 'LAN', 'LAS', 'NA', 'OCE', 'RU', 'TR', 'JP', 'KR'])
+        self.combo.addItems(['BR', 'EUNE', 'EUW', 'LAN', 'LAS', 'NA', 'OCE', 'RU', 'TR', 'JP', 'KR', 'PH', 'SG', 'TW', 'TH', 'VN'])
 
         self.key = QLineEdit()
-        self.key.setPlaceholderText('Paste the api key')
+        self.key.setPlaceholderText('Paste the api key (optional)')
 
         self.button = QPushButton('Search')
         self.button.clicked.connect(self.check_name)
@@ -73,27 +70,32 @@ class NameChecker(QWidget):
         self.setLayout(layout)
         self.show()
 
+    def keyPressEvent(self, event):
+        if (event.key() == 16777220 or event.key() == 43) and self.button.isEnabled():
+            self.check_name()
+
     def check_name(self):
         self.button.setEnabled(False)
+        self.name.selectAll()
 
         self.worker = CheckWorker()
         self.thread = QThread(parent=self)
         self.worker.moveToThread(self.thread)
 
-        self.check_signal.connect(self.worker.check_name)
+        self.check_name_start.connect(self.worker.check_name)
         self.worker.complete.connect(self.update_label)
         self.worker.complete.connect(lambda: self.button.setEnabled(True))
 
         self.thread.start()
 
-        key = self.key.text()
         server = self.combo.currentText()
+        key = self.key.text()
         name = self.name.text()
 
-        self.check_signal.emit(key, server, name)
+        self.check_name_start.emit(server, key, name)
 
     def update_label(self, text):
-        self.label.setText(text)
+        self.label.setText(text) 
 
 def app():
     app = QApplication([])
