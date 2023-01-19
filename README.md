@@ -1,5 +1,5 @@
 # lol-name-checker
-Checks when a League of Legends summoner name will be available.
+Checks when a League of Legends summoner name becomes available.
 
 ## Preview:
 ![App Preview](/preview.png)
