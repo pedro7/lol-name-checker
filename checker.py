@@ -41,7 +41,7 @@ class Checker:
         html = get(f'https://lolnames.gg/en/{self._server}/{format(name)}/', headers={'User-Agent': 'N'}).text
         last_game = search('Last game: [^<]*', html)
         if not last_game:
-            raise ValueError
+            raise ValueError('last game not found')
         last_game = last_game.group()[23:]
         cleanup_date = search('Cleanup date [^:]*: [^<]*', html).group().strip()[-11:]
         months = {
