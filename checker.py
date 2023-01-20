@@ -23,27 +23,46 @@ class Checker:
             return self._get_name_availability_without_key(name)
 
     def _get_name_availability_with_key(self, name):
+        summoner_data = self._get_summoner_data(name)
+        return self._get_cleanup_date(summoner_data['summonerLevel'], summoner_data['revisionDate'])
+
+    def _get_summoner_data(self, name):
         summoner_data = get(
             f'https://{self._platform}.api.riotgames.com/lol/summoner/v4/summoners/by-name/{quote(name)}?'
             f'api_key={self._key}'
         )
         summoner_data.raise_for_status()
-        summoner_data = summoner_data.json()
-        level = summoner_data['summonerLevel']
+        return summoner_data.json()
+
+    @staticmethod
+    def _get_cleanup_date(level, timestamp):
         if level >= 30:
-            return datetime.fromtimestamp(summoner_data['revisionDate'] / 1000) + relativedelta(months=30)
+            return datetime.fromtimestamp(timestamp / 1000) + relativedelta(months=30)
         elif level <= 6:
-            return datetime.fromtimestamp(summoner_data['revisionDate'] / 1000) + relativedelta(months=6)
+            return datetime.fromtimestamp(timestamp / 1000) + relativedelta(months=6)
         else:
-            return datetime.fromtimestamp(summoner_data['revisionDate'] / 1000) + relativedelta(months=level)
+            return datetime.fromtimestamp(timestamp / 1000) + relativedelta(months=level)
 
     def _get_name_availability_without_key(self, name):
-        html = get(f'https://lolnames.gg/en/{self._server}/{format(name)}/', headers={'User-Agent': 'N'}).text
+        lolnames_gg_html = self._get_lolnames_gg_html(name)
+        last_game, cleanup_date = self._get_name_availability_data(lolnames_gg_html)
+        return self._build_name_availability(last_game, cleanup_date)
+
+    def _get_lolnames_gg_html(self, name):
+        return get(f'https://lolnames.gg/en/{self._server}/{format(name)}/', headers={'User-Agent': 'N'}).text
+
+    @staticmethod
+    def _get_name_availability_data(html):
         last_game = search('Last game: [^<]*', html)
-        if not last_game:
+        if last_game:
+            last_game = last_game.group()[23:]
+        else:
             raise ValueError('last game not found')
-        last_game = last_game.group()[23:]
         cleanup_date = search('Cleanup date [^:]*: [^<]*', html).group().strip()[-11:]
+        return [last_game, cleanup_date]
+
+    @staticmethod
+    def _build_name_availability(last_game, cleanup_date):
         months = {
             'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6, 'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10,
             'Nov': 11, 'Dec': 12
