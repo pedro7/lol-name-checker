@@ -44,15 +44,15 @@ class Checker:
             return datetime.fromtimestamp(timestamp / 1000) + relativedelta(months=level)
 
     def _get_name_availability_without_key(self, name):
-        lolnames_gg_html = self._get_lolnames_gg_html(name)
-        last_game, cleanup_date = self._get_name_availability_data(lolnames_gg_html)
-        return self._build_name_availability(last_game, cleanup_date)
+        lolnames_html = self._get_lolnames_html(name)
+        last_game, cleanup_date = self._get_lolnames_name_data(lolnames_html)
+        return self._get_lolnames_name_availability(last_game, cleanup_date)
 
-    def _get_lolnames_gg_html(self, name):
-        return get(f'https://lolnames.gg/en/{self._server}/{format(name)}/', headers={'User-Agent': 'N'}).text
+    def _get_lolnames_html(self, name):
+        return get(f'https://lolnames.gg/en/{self._server}/{quote(name)}/', headers={'User-Agent': 'N'}).text
 
     @staticmethod
-    def _get_name_availability_data(html):
+    def _get_lolnames_name_data(html):
         last_game = search('Last game: [^<]*', html)
         if last_game:
             last_game = last_game.group()[23:]
@@ -62,7 +62,7 @@ class Checker:
         return [last_game, cleanup_date]
 
     @staticmethod
-    def _build_name_availability(last_game, cleanup_date):
+    def _get_lolnames_name_availability(last_game, cleanup_date):
         months = {
             'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6, 'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10,
             'Nov': 11, 'Dec': 12
