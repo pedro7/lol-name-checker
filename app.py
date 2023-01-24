@@ -5,6 +5,7 @@ from PyQt6.QtWidgets import QApplication, QComboBox, QHBoxLayout, QLabel, QLineE
 from requests import HTTPError
 from sys import exit
 
+
 class CheckWorker(QObject):
     complete = pyqtSignal(str)
 
@@ -13,7 +14,7 @@ class CheckWorker(QObject):
         try:
             name = checker.get_name_availability(name)
         except HTTPError as http:
-            if (http.response.status_code == 404):
+            if http.response.status_code == 404:
                 self.complete.emit('<font size="4" color="green">Available for new/existent accounts.</font>')
                 return
             else:
@@ -22,17 +23,31 @@ class CheckWorker(QObject):
         except ValueError:
             self.complete.emit('<font size="4" color="green">Available for new/existent accounts.</font>')
             return
-        months = {1 : 'Jan', 2 : 'Feb', 3 : 'Mar', 4 : 'Apr', 5 : 'May', 6 : 'Jun', 7 : 'Jul', 8 : 'Aug', 9 : 'Sep', 10 : 'Oct', 11 : 'Nov', 12 : 'Dec'}
-        if (name > datetime.now()):
-            self.complete.emit(f'Available in {str((name - datetime.now())).split(".")[0]}\n{name.day} {months[name.month]} {name.year}, {name.time()}')
+        months = {
+            1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun', 7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct',
+            11: 'Nov', 12: 'Dec'
+        }
+        if name > datetime.now():
+            self.complete.emit(
+                f'Available in {str((name - datetime.now())).split(".")[0]}\n{name.day} {months[name.month]} '
+                f'{name.year}, {name.time()}'
+            )
         else:
             self.complete.emit('<font size="4" color="green">Available for existent accounts.</font>') 
+
 
 class NameChecker(QWidget):
     check_name_start = pyqtSignal(str, str, str)
 
     def __init__(self):
         super().__init__()
+        self.name = None
+        self.combo = None
+        self.key = None
+        self.button = None
+        self.label = None
+        self.worker = None
+        self.thread = None
         self.init_ui()
 
     def init_ui(self):
@@ -41,7 +56,9 @@ class NameChecker(QWidget):
         self.name.setMaxLength(16)
 
         self.combo = QComboBox()
-        self.combo.addItems(['BR', 'EUNE', 'EUW', 'LAN', 'LAS', 'NA', 'OCE', 'RU', 'TR', 'JP', 'KR', 'PH', 'SG', 'TW', 'TH', 'VN'])
+        self.combo.addItems(
+            ['BR', 'EUNE', 'EUW', 'LAN', 'LAS', 'NA', 'OCE', 'RU', 'TR', 'JP', 'KR', 'PH', 'SG', 'TW', 'TH', 'VN']
+        )
 
         self.key = QLineEdit()
         self.key.setPlaceholderText('API key (optional)')
@@ -49,7 +66,9 @@ class NameChecker(QWidget):
         self.button = QPushButton('Search')
         self.button.clicked.connect(self.check_name)
 
-        self.label = QLabel('<a href=http://www.github.com/pedro7><font size="4" color="black">github.com/pedro7</font></a>')
+        self.label = QLabel(
+            '<a href=http://www.github.com/pedro7><font size="4" color="black">github.com/pedro7</font></a>'
+        )
         self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.label.setOpenExternalLinks(True)
 
@@ -98,11 +117,13 @@ class NameChecker(QWidget):
     def update_label(self, text):
         self.label.setText(text) 
 
+
 def app():
     app = QApplication([])
     app.setStyle('Fusion')
     name_checker = NameChecker()
     exit(app.exec())
+
 
 if __name__ == '__main__':
     app()
